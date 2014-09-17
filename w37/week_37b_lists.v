@@ -619,8 +619,30 @@ Proposition reverse_v1_fits_the_specification_of_reverse :
   forall T : Type,
     specification_of_reverse T (reverse_v1 T).
 Proof.
-Abort.
-(* Replace "Abort." with a proof. *)
+  intro T.
+  unfold specification_of_reverse.
+  intros append S_append.
+  split.
+    unfold reverse_v1.
+    apply (unfold_reverse_ds_base_case T).
+  intros x xs'.
+  unfold reverse_v1.
+  rewrite -> (unfold_reverse_ds_induction_case T x xs').
+  Check append_v1_fits_the_specification_of_append.
+  Check (there_is_only_one_append T 
+                                  (append_v1 T) 
+                                  append 
+                                  (append_v1_fits_the_specification_of_append T) 
+                                  S_append). (* Mind == blown *)
+  rewrite -> (there_is_only_one_append T 
+                                       (append_v1 T) 
+                                       append 
+                                       (append_v1_fits_the_specification_of_append T) 
+                                       S_append
+                                       (reverse_ds T xs')
+                                       (x :: nil)).
+  reflexivity.
+Qed.
 
 (* ***** *)
 
