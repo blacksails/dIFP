@@ -35,6 +35,48 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma unfold_plus_bc :
+  forall y : nat,
+    0 + y = y.
+Proof.
+  unfold_tactic plus.
+Qed.
+
+Lemma unfold_plus_ic :
+  forall x' y : nat,
+    (S x') + y = S (x' + y).
+Proof.
+  unfold_tactic plus.
+Qed.
+
+Lemma plus_1_l :
+  forall n : nat,
+    1 + n = S n.
+Proof.
+  intro n.
+  rewrite -> (unfold_plus_ic 0 n).
+  rewrite -> (unfold_plus_bc n).
+  reflexivity.
+Qed.
+
+Lemma plus_1_r :
+  forall n : nat,
+    n + 1 = S n.
+Proof.
+  intro n.
+  rewrite -> (plus_comm n 1).
+  apply (plus_1_l n).
+Qed.
+
+Lemma Sn_1_plus_n :
+  forall n : nat,
+    S n = 1 + n.
+Proof.
+  intro n.
+  symmetry.
+  apply (plus_1_l n).
+Qed.
+
 (* ********** *)
 
 (* The length of a list: *)
@@ -147,8 +189,10 @@ Proof.
   unfold specification_of_length.
   split.
 
+  unfold length_v1.
   apply (unfold_length_ds_base_case T).
-
+  
+  unfold length_v1.
   apply (unfold_length_ds_induction_case T).
 Qed.
 
@@ -199,45 +243,6 @@ Proof.
   unfold_tactic length_acc.
 Qed.
 
-Lemma unfold_plus_bc :
-  forall y : nat,
-    0 + y = y.
-(* left-hand side in the base case
-   =
-   the corresponding conditional branch *)
-Proof.
-  unfold_tactic plus.
-Qed.
-
-Lemma unfold_plus_ic :
-  forall x' y : nat,
-    (S x') + y = S (x' + y).
-(* left-hand side in the inductive case
-   =
-   the corresponding conditional branch *)
-Proof.
-  unfold_tactic plus.
-Qed.
-
-Lemma plus_1_l :
-  forall n : nat,
-    1 + n = S n.
-Proof.
-  intro n.
-  rewrite -> (unfold_plus_ic 0 n).
-  rewrite -> (unfold_plus_bc n).
-  reflexivity.
-Qed.
-
-Lemma plus_1_r :
-  forall n : nat,
-    n + 1 = S n.
-Proof.
-  intro n.
-  rewrite -> (plus_comm n 1).
-  apply (plus_1_l n).
-Qed.
-
 (* A useful lemma (Eureka): *)
 
 Lemma about_length_acc :
@@ -245,38 +250,55 @@ Lemma about_length_acc :
     length_acc T xs a = (length_acc T xs 0) + a.
 Proof.
   intros T xs.
-  induction xs as [ | x' xs' IHxs'].
-    intro a.
-    rewrite -> (unfold_length_acc_base_case T a).
-    rewrite -> (unfold_length_acc_base_case T 0).
-    rewrite -> (plus_0_l a).
-    reflexivity.
+
+  induction xs as [| x xs IHxs].
+
   intro a.
-  rewrite -> (unfold_length_acc_induction_case T).
-  rewrite -> (unfold_length_acc_induction_case T).
-  rewrite -> (IHxs' (S a)).
-  rewrite -> (IHxs' 1).
-  rewrite <- (plus_assoc (length_acc T xs' 0) 1 a).
-  rewrite -> (plus_1_l a).
+  rewrite -> (unfold_length_acc_base_case T 0).
+  rewrite -> (unfold_length_acc_base_case T a).
+  rewrite -> (plus_0_l a).
+
+  reflexivity.
+
+  intro a.
+  rewrite -> (unfold_length_acc_induction_case T x xs).
+  rewrite -> (unfold_length_acc_induction_case).
+
+  rewrite -> (Sn_1_plus_n).
+  rewrite -> (IHxs (1 + a)).
+  rewrite -> (IHxs 1).
+  rewrite -> (plus_assoc (length_acc T xs 0) 1 a).
+
   reflexivity.
 Qed.
+(* Replace "Abort." with a proof. *)
 
 Proposition length_v2_fits_the_specification_of_length :
   forall T : Type,
     specification_of_length T (length_v2 T).
 Proof.
-  intro T.
+  intros T.
   unfold specification_of_length.
+
   split.
-    unfold length_v2.
-    apply (unfold_length_acc_base_case T 0).
   unfold length_v2.
-  intros x xs'.
-  rewrite -> (unfold_length_acc_induction_case T x xs' 0).
-  rewrite -> (about_length_acc T xs' 1).
-  rewrite -> (plus_1_r (length_acc T xs' 0)).
+
+  rewrite -> (unfold_length_acc_base_case T 0).
+  reflexivity.
+
+  intros x xs.
+  unfold length_v2.
+
+  rewrite -> (unfold_length_acc_induction_case T x xs 0).
+  rewrite -> (Sn_1_plus_n (length_acc T xs 0)).
+  rewrite -> (about_length_acc T xs 1).
+
+  rewrite -> (plus_1_r).
+  rewrite -> (plus_1_l (length_acc T xs 0)).
+
   reflexivity.
 Qed.
+(* Replace "Abort." with a proof. *)
 
 (* ********** *)
 
@@ -333,17 +355,22 @@ Proof.
   intros T append_1 append_2.
   unfold specification_of_append.
   intros [Hbc1 Hic1] [Hbc2 Hic2].
-  induction xs as [ | x' xs' IHxs'].
-    intro ys.
-    rewrite -> (Hbc1 ys).
-    rewrite -> (Hbc2 ys).
-    reflexivity.
+
+  intro xs.
+  induction xs as [ | x xs' IHxs'].
+
   intro ys.
-  rewrite -> (Hic1 x' xs' ys).
-  rewrite -> (Hic2 x' xs' ys).
-  rewrite -> (IHxs' ys).
+  rewrite -> (Hbc1 ys).
+  rewrite -> (Hbc2 ys).
+  reflexivity.
+
+  intro ys.
+  rewrite (Hic1 x xs').
+  rewrite (Hic2 x xs').
+  rewrite -> IHxs'.
   reflexivity.
 Qed.
+(* Replace "Abort." with a proof. *)
 
 Fixpoint append_ds (T : Type) (xs ys : list T) : list T :=
   match xs with
@@ -383,12 +410,12 @@ Proof.
   intro T.
   unfold specification_of_append.
   split.
-    intro ys.
-    unfold append_v1.
-    apply (unfold_append_v1_base_case T ys).
-  unfold append_v1.
+
+  apply (unfold_append_v1_base_case T).
+
   apply (unfold_append_v1_induction_case T).
 Qed.
+(* Replace "Abort." with a proof. *)
 
 (* ********** *)
 
@@ -401,26 +428,23 @@ Qed.
        length (append xs ys) = (length xs) + (length ys)
 *)
 
+Definition unit_tests_for_append_nat_properties (append : list nat -> list nat -> list nat) :=
+  (equal_list_nat (append nil (0 :: nil))
+                  (0 :: nil))
+  &&
+  (equal_list_nat (append (0 :: nil) nil)
+                  (0 :: nil))
+  &&
+  (equal_list_nat (append (append (0 :: nil) (1 :: nil)) (2 :: nil))
+                  (append (0 :: nil) (append (1 :: nil) (2 :: nil))))
+  &&
+  (length (append (1 :: 2 :: nil) (3 :: 4 :: 5 :: nil))
+          === (length (1 :: 2 :: nil)) + (length (3 :: 4 :: 5 :: nil)))
+  .
+
+Compute unit_tests_for_append_nat_properties (append_v1 nat).
+
 (* Exercise: write a unit test that validates these properties. *)
-Definition unit_tests_for_append_properties (append : list nat -> list nat -> list nat) :=
-  (equal_list_nat (append nil 
-                          (1 :: 2 :: nil))
-                  (1 :: 2 :: nil))
-  &&
-  (equal_list_nat (append (1 :: 2 :: nil) 
-                          nil) 
-                  (1 :: 2 :: nil))
-  &&
-  (equal_list_nat (append (append (1 :: 2 :: nil) 
-                                  (3 :: 4 :: nil)) 
-                          (5 :: 6 :: nil))
-                  (append (1 :: 2 :: nil)
-                          (append (3 :: 4 :: nil)
-                                  (5 :: 6 :: nil))))
-  &&
-  (length (append (1 :: 2 :: nil)
-                  (3 :: 4 :: nil)) === 
-  (length (1 :: 2 :: nil)) + (length (3 :: 4 :: nil))).
 
 Lemma nil_is_neutral_for_append_on_the_left :
   forall (T : Type)
@@ -561,21 +585,31 @@ Theorem there_is_only_one_reverse :
 Proof.
   intros T append S_append.
   intros reverse_1 reverse_2.
-  intros S_reverse_1 S_reverse_2.
-  unfold specification_of_reverse in S_reverse_1.
-  destruct (S_reverse_1 append S_append) as [Hbc1 Hic1].
-  clear S_reverse_1.
-  destruct (S_reverse_2 append S_append) as [Hbc2 Hic2].
-  clear S_reverse_2.
-  induction xs as [ | x' xs' IHxs'].
-    rewrite -> Hbc1.
-    rewrite -> Hbc2.
-    reflexivity.
-  rewrite -> (Hic1 x' xs').
-  rewrite -> (Hic2 x' xs').
-  rewrite -> IHxs'.
+  intros S_rev1 S_rev2.
+
+  unfold specification_of_reverse in S_rev1.
+  unfold specification_of_reverse in S_rev2.
+  destruct (S_rev1 append S_append) as [H_rev1_bc H_rev1_ic].
+  destruct (S_rev2 append S_append) as [H_rev2_bc H_rev2_ic].
+  clear S_rev1 S_rev2.
+
+  unfold specification_of_append in S_append.
+  destruct S_append as [H_append_bc H_append_ic].
+
+  intro xs.
+  induction xs as [| x' xs' IHxs'].
+
+  rewrite -> H_rev1_bc.
+  rewrite -> H_rev2_bc.
+  reflexivity.
+
+  rewrite -> (H_rev1_ic x' xs').
+  rewrite -> (H_rev2_ic x' xs').
+  rewrite -> (IHxs').
+
   reflexivity.
 Qed.
+(* Replace "Abort." with a proof. *)
 
 (* ***** *)
 
@@ -621,28 +655,24 @@ Proposition reverse_v1_fits_the_specification_of_reverse :
 Proof.
   intro T.
   unfold specification_of_reverse.
+
   intros append S_append.
+
   split.
-    unfold reverse_v1.
-    apply (unfold_reverse_ds_base_case T).
+
+  apply unfold_reverse_ds_base_case.
+
   intros x xs'.
   unfold reverse_v1.
   rewrite -> (unfold_reverse_ds_induction_case T x xs').
-  Check append_v1_fits_the_specification_of_append.
-  Check (there_is_only_one_append T 
-                                  (append_v1 T) 
-                                  append 
-                                  (append_v1_fits_the_specification_of_append T) 
-                                  S_append). (* Mind == blown *)
-  rewrite -> (there_is_only_one_append T 
-                                       (append_v1 T) 
-                                       append 
-                                       (append_v1_fits_the_specification_of_append T) 
-                                       S_append
-                                       (reverse_ds T xs')
-                                       (x :: nil)).
+
+  rewrite -> (there_is_only_one_append T append (append_v1 T) S_append
+                                       (append_v1_fits_the_specification_of_append T)
+                                       (reverse_ds T xs') (x :: nil)).
   reflexivity.
 Qed.
+
+(* Replace "Abort." with a proof. *)
 
 (* ***** *)
 
@@ -670,8 +700,7 @@ Qed.
 
 Lemma unfold_reverse_acc_induction_case :
   forall (T : Type) (x : T) (xs' a : list T),
-    reverse_acc T (x :: xs') a =
-    reverse_acc T (xs') (x :: a).
+    reverse_acc T (x :: xs') a = reverse_acc T xs' (x :: a).
 Proof.
   unfold_tactic reverse_acc.
 Qed.
@@ -684,25 +713,32 @@ Lemma about_reverse_acc :
       reverse_acc T xs a = append (reverse_acc T xs nil) a.
 Proof.
   intros T append S_append.
-  intro xs.
-  induction xs as [ | x' xs' IHxs'].
-    intro a.
-    rewrite -> (unfold_reverse_acc_base_case T a).
-    rewrite -> (unfold_reverse_acc_base_case T nil).
-    rewrite -> (nil_is_neutral_for_append_on_the_left T append S_append a).
-    reflexivity.
+  intros xs.
+
+  assert (S_append_ := S_append).
+  destruct S_append as [H_append_bc H_append_ic].
+
+  induction xs as [|x' xs' IHxs'].
+
+  intro a.
+
+  rewrite -> (unfold_reverse_acc_base_case T a).
+  rewrite -> (unfold_reverse_acc_base_case T nil).
+  rewrite -> (H_append_bc a).
+  reflexivity.
+
   intro a.
   rewrite -> (unfold_reverse_acc_induction_case T x' xs' a).
   rewrite -> (unfold_reverse_acc_induction_case T x' xs' nil).
   rewrite -> (IHxs' (x' :: a)).
+  
   rewrite -> (IHxs' (x' :: nil)).
-  rewrite -> (append_is_associative T append S_append).
-  unfold specification_of_append in S_append.
-  destruct S_append as [H_append_bc H_append_ic].
+  rewrite -> (append_is_associative T append S_append_ (reverse_acc T xs' nil) (x' :: nil) a).
   rewrite -> (H_append_ic x' nil a).
   rewrite -> (H_append_bc a).
   reflexivity.
 Qed.
+(* Replace "Abort." with a proof. *)
 
 Proposition reverse_v2_fits_the_specification_of_reverse :
   forall T : Type,
@@ -710,16 +746,24 @@ Proposition reverse_v2_fits_the_specification_of_reverse :
 Proof.
   intro T.
   unfold specification_of_reverse.
-  intros append S_append.
+
+  intro append.
+  intro S_append.
+
   split.
-    unfold reverse_v2.
-    apply (unfold_reverse_acc_base_case T nil).
+
+  apply (unfold_reverse_acc_base_case T nil).
+
+  intros x xs.
   unfold reverse_v2.
-  intros x xs'.
-  rewrite -> (unfold_reverse_acc_induction_case T x xs' nil).
-  rewrite -> (about_reverse_acc T append S_append xs' (x :: nil)).
+  rewrite -> (unfold_reverse_acc_induction_case T x xs nil).
+
+  rewrite -> (about_reverse_acc T append S_append xs (x :: nil)).
+
   reflexivity.
 Qed.
+
+(* Replace "Abort." with a proof. *)
 
 (* ********** *)
 
@@ -728,29 +772,24 @@ Qed.
        length xs = length (reverse xs)
      forall xs ys,
        reverse (append xs ys) = append (reverse ys) (reverse xs)
-     forall xs,
+w     forall xs,
        reverse (reverse xs) = xs
 *)
 
+Definition unit_tests_for_reverse_nat_properties
+           (reverse : list nat -> list nat)
+           (append : list nat -> list nat -> list nat) :=
+  (length (0 :: 1 :: nil) === length (reverse (0 :: 1 :: nil)))
+  &&
+  (equal_list_nat (reverse (append (0 :: 1 :: nil) (2 :: 3 :: nil)))
+                  (append (reverse (2 :: 3 :: nil)) (reverse (0 :: 1 :: nil))))
+  &&
+  (equal_list_nat (reverse (reverse (0 :: 1 :: nil))) (0 :: 1 :: nil))
+  .
+
+Compute unit_tests_for_reverse_nat_properties (reverse_v2 nat) (append_v1 nat).
+
 (* Exercise: write a unit test that validates these properties. *)
-
-Definition unit_tests_for_reverse_length_append_nat (reverse : list nat -> list nat) 
-                                                    (length : list nat -> nat) 
-                                                    (append : list nat -> list nat -> list nat) :=
-  (length (1 :: 2 :: nil) === length (reverse (1 :: 2 :: nil)))
-  &&
-  (equal_list_nat (reverse (append (1 :: 2 :: nil)
-                                   (3 :: 4 :: nil))) 
-                  (append (reverse (3 :: 4 :: nil))
-                          (reverse (1 :: 2 :: nil))))
-  &&
-  (equal_list_nat (reverse (reverse (1 :: 2 :: nil)))
-                  (1 :: 2 :: nil))
-.
-
-Compute (unit_tests_for_reverse_length_append_nat (reverse_v2 nat) 
-                                                  (length_v2 nat) 
-                                                  (append_v1 nat)).
 
 Proposition reverse_preserves_length :
   forall (T : Type)
@@ -763,32 +802,34 @@ Proposition reverse_preserves_length :
     forall xs : list T,
       length xs = length (reverse xs).
 Proof.
-  intros T length append reverse.
+  intro T.
+  intros length append reverse.
   intros S_length S_append S_reverse.
-  unfold specification_of_length in S_length.
-  assert (S_length_ := S_length).
-  destruct (S_length) as [H_length_bc H_length_ic].
-  unfold specification_of_reverse in S_reverse.
+
   destruct (S_reverse append S_append) as [H_reverse_bc H_reverse_ic].
-  clear S_reverse.
-  induction xs as [ | x' xs' IHxs'].
-    rewrite -> H_reverse_bc.
-    reflexivity.
-  rewrite -> (H_length_ic x' xs').
-  rewrite -> (H_reverse_ic x' xs').
-  rewrite -> (append_preserves_length T 
-                                      length 
-                                      append 
-                                      S_length_ 
-                                      S_append 
-                                      (reverse xs') 
-                                      (x' :: nil)).
-  rewrite -> (H_length_ic x' nil).
-  rewrite -> (H_length_bc).
-  rewrite -> (plus_1_r (length (reverse xs'))).
-  rewrite -> IHxs'.
+  assert (S_append_ := S_append).
+  assert (S_length_ := S_length).
+  destruct S_length as [H_length_bc H_length_ic].
+  destruct S_append as [H_append_bc H_append_ic].
+
+  intro xs.
+  induction xs as [| x xs IHxs].
+
+  rewrite -> H_length_bc.
+  rewrite -> H_reverse_bc.
+  rewrite -> H_length_bc.
+  reflexivity.
+
+  rewrite -> H_length_ic.
+  rewrite -> H_reverse_ic.
+  rewrite -> (append_preserves_length T length append S_length_ S_append_ (reverse xs) (x :: nil)).
+  rewrite -> (H_length_ic x nil).
+  rewrite -> H_length_bc.
+  rewrite -> (plus_1_r (length (reverse xs))).
+  rewrite <- IHxs.
   reflexivity.
 Qed.
+(* Replace "Abort." with a proof. *)
 
 Proposition reverse_preserves_append_sort_of :
   forall (T : Type)
@@ -801,34 +842,30 @@ Proposition reverse_preserves_append_sort_of :
 Proof.
   intros T append reverse.
   intros S_append S_reverse.
-  unfold specification_of_reverse in S_reverse.
-  destruct (S_reverse append S_append) as [H_reverse_bc H_reverse_ic].
-  clear S_reverse.
+  intro xs.
+
   assert (S_append_ := S_append).
-  unfold specification_of_append in S_append.
   destruct S_append as [H_append_bc H_append_ic].
-  induction xs as [ | x' xs' IHxs'].
-    intro ys.
-    rewrite -> (H_append_bc ys).
-    rewrite -> H_reverse_bc.
-    rewrite -> (nil_is_neutral_for_append_on_the_right T 
-                                                       append 
-                                                       S_append_ 
-                                                       (reverse ys)).
-    reflexivity.
+  destruct (S_reverse append S_append_) as [H_reverse_bc H_reverse_ic].
+
+  induction xs as [| x xs IHxs].
+
   intro ys.
-  rewrite -> (H_reverse_ic x' xs').
-  rewrite <- (append_is_associative T 
-                                    append 
-                                    S_append_ 
-                                    (reverse ys)
-                                    (reverse xs')
-                                    (x' :: nil)).
-  rewrite <- (IHxs' ys).
-  rewrite <- (H_reverse_ic x' (append xs' ys)).
-  rewrite -> (H_append_ic x' xs').
+  rewrite -> (H_append_bc ys).
+  rewrite -> H_reverse_bc.
+  rewrite -> (nil_is_neutral_for_append_on_the_right T append S_append_ (reverse ys)).
+  reflexivity.
+
+  intro ys.
+  rewrite -> (H_append_ic x xs ys).
+  rewrite -> (H_reverse_ic x (append xs ys)).
+  rewrite -> (IHxs ys).
+  rewrite -> (append_is_associative T append S_append_ (reverse ys) (reverse xs) (x :: nil)).
+  rewrite -> (H_reverse_ic x xs).
   reflexivity.
 Qed.
+
+(* Replace "Abort." with a proof. *)
 
 Proposition reverse_is_involutive :
   forall (T : Type)
@@ -841,48 +878,36 @@ Proposition reverse_is_involutive :
 Proof.
   intros T append reverse.
   intros S_append S_reverse.
-  
-  assert (S_reverse_ := S_reverse).
-  unfold specification_of_reverse in S_reverse_.
-  destruct (S_reverse_ append S_append) as [H_reverse_bc H_reverse_ic].
-  clear S_reverse_.
 
   assert (S_append_ := S_append).
-  unfold specification_of_append in S_append_.
-  destruct S_append_ as [H_append_bc H_append_ic].
+  destruct (S_reverse append S_append) as [H_reverse_bc H_reverse_ic].
+  destruct S_append as [H_append_bc H_append_ic].
 
-  induction xs as [ | x' xs' IHxs'].
-    rewrite -> H_reverse_bc.
-    apply H_reverse_bc.
-  rewrite -> (H_reverse_ic x' xs').
-  rewrite -> (reverse_preserves_append_sort_of T
-                                               append
-                                               reverse
-                                               S_append
-                                               S_reverse
-                                               (reverse xs')
-                                               (x' :: nil)).
-  rewrite -> IHxs'.
-  rewrite -> (H_reverse_ic x' nil).
+  intro xs.
+  induction xs as [| x xs IHxs].
+
   rewrite -> H_reverse_bc.
-  rewrite -> (nil_is_neutral_for_append_on_the_left T
-                                                    append
-                                                    S_append
-                                                    (x' :: nil)).
-  rewrite -> (H_append_ic x' nil xs').
-  rewrite -> (nil_is_neutral_for_append_on_the_left T
-                                                    append
-                                                    S_append
-                                                    xs').
+  rewrite -> H_reverse_bc.
+  reflexivity.
+
+  rewrite -> (H_reverse_ic x xs).
+  rewrite -> (reverse_preserves_append_sort_of T append reverse S_append_ S_reverse (reverse xs) (x :: nil)).
+  rewrite -> (H_reverse_ic x nil).
+  rewrite -> H_reverse_bc.
+  rewrite -> (H_append_bc (x :: nil)).
+  rewrite -> (IHxs).
+  rewrite -> (H_append_ic x nil xs).
+  rewrite -> (H_append_bc xs).
   reflexivity.
 Qed.
+(* Replace "Abort." with a proof. *)
 
 (* ********** *)
 
 (* Mapping a function over the elements of a list: *)
 
 Definition unit_tests_for_map_nat (map : (nat -> nat) -> list nat -> list nat) :=
-  (equal_list_nat (map (fun n => n)
+  (equal_list_nat (map (fun n => n) 
                        nil)
                   nil)
   &&
@@ -905,6 +930,14 @@ Definition unit_tests_for_map_nat (map : (nat -> nat) -> list nat -> list nat) :
   (equal_list_nat (map (fun n => S n)
                        (1 :: 2 :: 3 :: nil))
                   (2 :: 3 :: 4 :: nil))
+  &&
+  (equal_list_nat (map (fun n => n * 2)
+                       (1 :: 2 :: 3 :: nil))
+                  (2 :: 4 :: 6 :: nil))
+  &&
+  (equal_list_nat (map (fun n => 0)
+                       (1 :: 2 :: 3 :: nil))
+                  (0 :: 0 :: 0 :: nil))
   .
 
 (* Exercise: add more tests. *)
@@ -925,7 +958,26 @@ Theorem there_is_only_one_map :
            (xs : list T1),
       map_1 f xs = map_2 f xs.
 Proof.
-Abort.
+  intros T1 T2.
+  intros map_1 map_2.
+  intros S_map1 S_map2.
+  intros f xs.
+
+  destruct S_map1 as [H_map1_bc H_map1_ic].
+  destruct S_map2 as [H_map2_bc H_map2_ic].
+
+  induction xs as [| x' xs' IHxs'].
+
+  rewrite -> (H_map1_bc f).
+  rewrite -> (H_map2_bc f).
+  reflexivity.
+  
+  rewrite -> (H_map1_ic f x' xs').
+  rewrite -> (H_map2_ic f x' xs').
+
+  rewrite -> IHxs'.
+  reflexivity.
+Qed.
 (* Replace "Abort." with a proof. *)
 
 (* ***** *)
@@ -943,11 +995,43 @@ Definition map_v1 (T1 T2 : Type) (f : T1 -> T2) (xs : list T1) : list T2 :=
 
 Compute unit_tests_for_map_nat (map_v1 nat nat).
 
+Lemma unfold_map_ds_base_case :
+  forall (T1 T2 : Type)
+         (f : T1 -> T2),
+    map_ds T1 T2 f nil = nil.
+(* left-hand side in the base case
+   =
+   the corresponding conditional branch *)
+Proof.
+  unfold_tactic map_ds.
+Qed.
+
+Lemma unfold_map_ds_induction_case :
+  forall (T1 T2 : Type)
+         (f : T1 -> T2)
+         (x : T1)
+         (xs' : list T1),
+    map_ds T1 T2 f (x :: xs') =
+    (f x) :: (map_ds T1 T2 f xs').
+(* left-hand side in the inductive case
+   =
+   the corresponding conditional branch *)
+Proof.
+  unfold_tactic map_ds.
+Qed.
+
 Proposition map_v1_fits_the_specification_of_map :
   forall T1 T2 : Type,
     specification_of_map T1 T2 (map_v1 T1 T2).
 Proof.
-Abort.
+  intros T1 T2.
+
+  unfold specification_of_map.
+  split.
+
+  apply (unfold_map_ds_base_case T1 T2).
+  apply (unfold_map_ds_induction_case T1 T2).
+Qed.
 (* Replace "Abort." with a proof. *)
 
 (* ********** *)
@@ -960,6 +1044,22 @@ Abort.
      for all f xs,
        map f (reverse xs) = reverse (map f xs)
 *)
+
+Definition unit_tests_for_map_nat_properties
+           (map : (nat -> nat) -> list nat -> list nat)
+           (append : list nat -> list nat -> list nat)
+           (reverse : list nat -> list nat) :=
+  (equal_list_nat (map (fun a => a + 1) (map (fun b => b * 2) (0 :: 1 :: 2 :: 3 :: nil)))
+                  (map (fun x => (fun a => a + 1) ((fun b => b * 2) x)) (0 :: 1 :: 2 :: 3 :: nil)))
+    &&
+  (equal_list_nat (map (fun a => a * a) (append (0 :: 1 :: nil) (2 :: 3 :: nil)))
+                  (append (map (fun a => a * a) (0 :: 1 :: nil)) (map (fun a => a * a) (2 :: 3 :: nil))))
+  &&
+  (equal_list_nat (map (fun a => a * 3) (reverse (0 :: 1 :: nil)))
+                  (reverse (map (fun a => a * 3) (0 :: 1 :: nil))))
+  .
+
+Compute unit_tests_for_map_nat_properties (map_v1 nat nat) (append_v1 nat) (reverse_v1 nat).
 
 (* Exercise: write a unit test that validates these properties. *)
 
@@ -976,7 +1076,28 @@ Proposition listlessness_of_map :
            (xs : list T1),
       map23 f2 (map12 f1 xs) = map13 (fun x => f2 (f1 x)) xs.
 Proof.
-Abort.
+  intros T1 T2 T3.
+  intros map1 map2 map3.
+  intros S_map1 S_map2 S_map3.
+  intros f1 f2 xs.
+
+  destruct S_map1 as [H_map1_bc H_map1_ic].
+  destruct S_map2 as [H_map2_bc H_map2_ic].
+  destruct S_map3 as [H_map3_bc H_map3_ic].
+
+  induction xs as [| x' xs' IHxs'].
+  
+  rewrite -> (H_map1_bc f1).
+  rewrite -> (H_map2_bc f2).
+  rewrite -> (H_map3_bc (fun x : T1 => f2 (f1 x))).
+  reflexivity.
+
+  rewrite -> (H_map1_ic f1 x' xs').
+  rewrite -> (H_map2_ic f2 (f1 x') (map1 f1 xs')).
+  rewrite -> IHxs'.
+  rewrite -> (H_map3_ic (fun x : T1 => f2 (f1 x)) x' xs').
+  reflexivity.
+Qed.
 (* Replace "Abort." with a proof. *)
 
 Proposition append_preserves_map :
@@ -990,7 +1111,31 @@ Proposition append_preserves_map :
     forall (f : T1 -> T2) (xs ys : list T1),
        map f (append_1 xs ys) = append_2 (map f xs) (map f ys).
 Proof.
-Abort.
+  intros T1 T2 map append_1 append_2.
+  intros S_map S_append_1 S_append_2.
+  intros f xs.
+
+  destruct S_map as [H_map_bc H_map_ic].
+  destruct S_append_1 as [H_append_1_bc H_append_1_ic].
+  destruct S_append_2 as [H_append_2_bc H_append_2_ic].
+
+  induction xs as [| x' xs' IHxs'].
+
+  intro ys.  
+  rewrite -> (H_append_1_bc ys).
+  rewrite -> (H_map_bc f).
+  rewrite -> (H_append_2_bc (map f ys)).
+  reflexivity.
+
+  intro ys.
+  rewrite -> (H_append_1_ic x' xs' ys).
+  rewrite -> (H_map_ic f x' (append_1 xs' ys)).
+  rewrite -> (IHxs' ys).
+  
+  rewrite -> (H_map_ic f x' xs').
+  rewrite -> (H_append_2_ic (f x') (map f xs') (map f ys)).
+  reflexivity.
+Qed.
 (* Replace "Abort." with a proof. *)
 
 Proposition reverse_preserves_map_sort_of :
@@ -1009,7 +1154,39 @@ Proposition reverse_preserves_map_sort_of :
            (xs : list T1),
       map f (reverse_1 xs) = reverse_2 (map f xs).
 Proof.
-Abort.
+  intros T1 T2 append1 append2 reverse1 reverse2 map.
+  intros S_append1 S_append2 S_reverse1 S_reverse2 S_map.
+  intros f xs.
+
+  assert (S_map_ := S_map).
+  assert (S_append1_ := S_append1).
+  assert (S_append2_ := S_append2).
+
+  destruct (S_reverse1 append1 S_append1) as [H_reverse1_bc H_reverse1_ic].
+  destruct (S_reverse2 append2 S_append2) as [H_reverse2_bc H_reverse2_ic].
+  clear S_reverse1 S_reverse2.
+  destruct S_append1 as [H_append1_bc H_append1_ic].
+  destruct S_append2 as [H_append2_bc H_append2_ic].
+  destruct S_map as [H_map_bc H_map_ic].
+  
+  induction xs as [| x' xs' IHxs'].
+
+  rewrite -> H_reverse1_bc.
+  rewrite -> H_map_bc.
+  rewrite -> H_reverse2_bc.  
+  reflexivity.
+
+  rewrite -> (H_reverse1_ic x' xs').
+  rewrite -> (append_preserves_map T1 T2 map append1 append2 S_map_ S_append1_ S_append2_
+                                   f (reverse1 xs') (x' :: nil)).
+  rewrite -> (H_map_ic f x' nil).
+  rewrite -> (H_map_bc f).
+  rewrite -> IHxs'.
+
+  rewrite -> (H_map_ic f x' xs').
+  rewrite -> (H_reverse2_ic (f x') (map f xs')).
+  reflexivity.
+Qed.
 (* Replace "Abort." with a proof. *)
 
 (* ********** *)
