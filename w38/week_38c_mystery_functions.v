@@ -377,6 +377,39 @@ Proof.
   reflexivity.
 Qed.
 
+Definition unit_test_for_the_mystery_function_5 (f : nat -> nat) :=
+  (f 0 =n= 0)
+  &&
+  (f 1 =n= 1)
+  &&
+  (f 2 =n= 4)
+  &&
+  (f 3 =n= 9)
+  &&
+  (f 4 =n= 16)
+  &&
+  (f 10 =n= 100).
+
+Compute unit_test_for_the_mystery_function_5 (fun n => n * n).
+
+Theorem and_the_mystery_function_5_is_square :
+  specification_of_the_mystery_function_5 (fun n => n * n).
+Proof.
+  unfold specification_of_the_mystery_function_5.
+  split.
+    rewrite -> mult_0_l.
+    reflexivity.
+  intro i.
+  rewrite -> mult_succ_r.
+  rewrite -> mult_succ_l.
+  rewrite <- (plus_n_Sm (i * i + i) i).
+  rewrite -> mult_succ_l.
+  rewrite -> mult_1_l.
+  rewrite -> (plus_comm (i + i)).
+  rewrite -> plus_assoc.
+  reflexivity.
+Qed.
+
 (* ********** *)
 
 Definition specification_of_the_mystery_function_6 (f : nat -> nat) :=
