@@ -138,7 +138,7 @@ Lemma unfold_length_ds_induction_case :
    =
    the corresponding conditional branch *)
 Proof.
-  unfold_tactic length_v1.
+  unfold_tactic length_ds.
 Qed.
 
 Proposition length_v1_fits_the_specification_of_length :
@@ -247,15 +247,15 @@ Lemma about_length_acc :
     length_acc T xs a = (length_acc T xs 0) + a.
 Proof.
   intros T xs.
-  induction xs as [ | x' xs' IHxs'].
+  induction xs as [ | x' xs' IHxs'].
     intro a.
     rewrite -> (unfold_length_acc_base_case T a).
     rewrite -> (unfold_length_acc_base_case T 0).
     rewrite -> (plus_0_l a).
     reflexivity.
   intro a.
-  rewrite -> (unfold_length_acc_induction_case T).
-  rewrite -> (unfold_length_acc_induction_case T).
+  rewrite -> (unfold_length_acc_induction_case T x' xs').
+  rewrite -> (unfold_length_acc_induction_case T x' xs').
   rewrite -> (IHxs' (S a)).
   rewrite -> (IHxs' 1).
   rewrite <- (plus_assoc (length_acc T xs' 0) 1 a).
@@ -334,7 +334,7 @@ Theorem there_is_only_one_append :
 Proof.
   intros T append_1 append_2.
   unfold specification_of_append.
-  intros [Hbc1 Hic1] [Hbc2 Hic2].
+  intros [Hbc1 Hic1] [Hbc2 Hic2] xs.
   induction xs as [ | x' xs' IHxs'].
     intro ys.
     rewrite -> (Hbc1 ys).
@@ -388,8 +388,9 @@ Proof.
     intro ys.
     unfold append_v1.
     apply (unfold_append_v1_base_case T ys).
+  intros x xs' ys.
   unfold append_v1.
-  apply (unfold_append_v1_induction_case T).
+  apply (unfold_append_v1_induction_case T x xs' ys).
 Qed.
 
 (* ********** *)
@@ -564,6 +565,7 @@ Proof.
   intros T append S_append.
   intros reverse_1 reverse_2.
   intros S_reverse_1 S_reverse_2.
+  intro xs.
   unfold specification_of_reverse in S_reverse_1.
   destruct (S_reverse_1 append S_append) as [Hbc1 Hic1].
   clear S_reverse_1.
@@ -767,6 +769,7 @@ Proposition reverse_preserves_length :
 Proof.
   intros T length append reverse.
   intros S_length S_append S_reverse.
+  intro xs.
   unfold specification_of_length in S_length.
   assert (S_length_ := S_length).
   destruct (S_length) as [H_length_bc H_length_ic].
@@ -803,6 +806,7 @@ Proposition reverse_preserves_append_sort_of :
 Proof.
   intros T append reverse.
   intros S_append S_reverse.
+  intro xs.
   unfold specification_of_reverse in S_reverse.
   destruct (S_reverse append S_append) as [H_reverse_bc H_reverse_ic].
   clear S_reverse.
@@ -843,6 +847,7 @@ Proposition reverse_is_involutive :
 Proof.
   intros T append reverse.
   intros S_append S_reverse.
+  intro xs.
   
   assert (S_reverse_ := S_reverse).
   unfold specification_of_reverse in S_reverse_.
@@ -1048,7 +1053,7 @@ Proof.
   intros T1 T2 T3.
   intros map12 map23 map13.
   intros S_map12 S_map23 S_map13.
-  intros f1 f2.
+  intros f1 f2 xs.
   
   unfold specification_of_map in S_map12.
   destruct S_map12 as [H_map12_bc H_map12_ic].
@@ -1082,7 +1087,7 @@ Proposition append_preserves_map :
 Proof.
   intros T1 T2 map append_1 append_2.
   intros S_map S_append_1 S_append_2.
-  intro f.
+  intros f xs.
 
   unfold specification_of_map in S_map.
   destruct S_map as [H_map_bc H_map_ic].
@@ -1124,7 +1129,7 @@ Proposition reverse_preserves_map_sort_of :
 Proof.
   intros T1 T2 append_1 append_2 reverse_1 reverse_2 map.
   intros S_append_1 S_append_2 S_reverse_1 S_reverse_2 S_map.
-  intro f.
+  intros f xs.
 
   assert (S_append_1_ := S_append_1).
   unfold specification_of_append in S_append_1_.
