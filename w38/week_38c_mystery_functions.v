@@ -416,6 +416,17 @@ Definition specification_of_the_mystery_function_6 (f : nat -> nat) :=
   (forall i j : nat,
     f (i + j) = f i + 2 * i * j + f j).
 
+Proposition there_is_only_one_mystery_function_6 :
+  forall f g : nat -> nat,
+    specification_of_the_mystery_function_6 f ->
+    specification_of_the_mystery_function_6 g ->
+    forall n : nat,
+      f n = g n.
+Proof.
+  intros f g S_fun6f S_fun6g n.
+  induction n as [ | n' IHn'].
+Abort.
+
 (* ********** *)
 
 Definition specification_of_the_mystery_function_7 (f : nat -> nat) :=
@@ -424,6 +435,96 @@ Definition specification_of_the_mystery_function_7 (f : nat -> nat) :=
   (forall i j : nat,
     f (S (i + j)) = 2 * f i * f j).
 
+Proposition there_is_only_one_mystery_function_7 :
+  forall f g : nat -> nat,
+    specification_of_the_mystery_function_7 f ->
+    specification_of_the_mystery_function_7 g ->
+    forall n : nat,
+      f n = g n.
+Proof.
+  intros f g [S_fun7f_bc S_fun7f_ic] [S_fun7g_bc S_fun7g_ic] n.
+  induction n as [ | n' IHn'].
+    rewrite -> S_fun7g_bc.
+    exact S_fun7f_bc.
+  rewrite <- (plus_0_r n').
+  rewrite -> S_fun7f_ic.
+  rewrite -> S_fun7f_bc.
+  rewrite -> S_fun7g_ic.
+  rewrite -> S_fun7g_bc.
+  rewrite -> IHn'.
+  reflexivity.
+Qed.
+
+Definition unit_test_for_the_mystery_function_7 (f : nat -> nat) :=
+  (f 0 =n= 1)
+  &&
+  (f 1 =n= 2)
+  &&
+  (f 2 =n= 4)
+  &&
+  (f 3 =n= 8)
+  &&
+  (f 4 =n= 16)
+  &&
+  (f 10 =n= 1024).
+
+Fixpoint pow n m :=
+  match m with
+  | 0 => 1
+  | S m => n * (pow n m)
+  end.
+
+Infix "^" := pow : nat_scope.
+
+Compute unit_test_for_the_mystery_function_7 (pow 2).
+
+Require Import unfold_tactic.
+
+Lemma unfold_pow_bc :
+  forall n : nat,
+    pow n 0 = 1.
+Proof.
+  unfold_tactic pow.
+Qed.
+
+Lemma unfold_pow_ic :
+  forall n m : nat,
+    pow n (S m) = n * (pow n m).
+Proof.
+  unfold_tactic pow.
+Qed.
+
+Lemma pow_plus_exponent :
+  forall n m p : nat,
+    pow n (m + p) = pow n m * pow n p.
+Proof.
+  intros n m p.
+  induction m as [ | m' IHm'].
+    rewrite -> plus_0_l.
+    rewrite -> unfold_pow_bc.
+    rewrite -> mult_1_l.
+    reflexivity.
+  rewrite -> plus_Sn_m.
+  rewrite -> unfold_pow_ic.
+  rewrite -> IHm'.
+  rewrite -> mult_assoc.
+  rewrite <- unfold_pow_ic.
+  reflexivity.
+Qed.
+
+Theorem and_the_mystery_function_7_is_pow2n :
+  specification_of_the_mystery_function_7 (pow 2).
+Proof.
+  unfold specification_of_the_mystery_function_7.
+  split.
+    apply unfold_pow_bc.
+  intros i j.
+  rewrite -> (unfold_pow_ic 2 (i + j)).
+  rewrite -> (pow_plus_exponent 2 i j).
+  rewrite -> mult_assoc.
+  reflexivity.
+Qed.
+
 (* ********** *)
 
 Definition specification_of_the_mystery_function_8 (f : nat -> nat) :=
@@ -431,6 +532,26 @@ Definition specification_of_the_mystery_function_8 (f : nat -> nat) :=
   /\
   (forall i j : nat,
     f (S (i + j)) = f i * f j).
+
+Proposition there_is_only_one_mystery_function_8 :
+  forall f g : nat -> nat,
+    specification_of_the_mystery_function_8 f ->
+    specification_of_the_mystery_function_8 g ->
+    forall n : nat,
+      f n = g n.
+Proof.
+  intros f g [S_fun8f_bc S_fun8f_ic] [S_fun8g_bc S_fun8g_ic] n.
+  induction n as [ | n' IHn'].
+    rewrite -> S_fun8g_bc.
+    exact S_fun8f_bc.
+  rewrite <- (plus_0_r n').
+  rewrite -> S_fun8f_ic.
+  rewrite -> S_fun8f_bc.
+  rewrite -> S_fun8g_ic.
+  rewrite -> S_fun8g_bc.
+  rewrite -> IHn'.
+  reflexivity.
+Qed.
 
 (* ********** *)
 
