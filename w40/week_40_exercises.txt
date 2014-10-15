@@ -1,0 +1,64 @@
+% week_40_exercises.txt -*- text -*-
+% dIFP 2014-2015, Q1, Week 40
+% Olivier Danvy <danvy@cs.au.dk>
+
+-----
+
+From week_40a_binary_trees.v:
+
+* Consider the following alternative definitions:
+
+    Fixpoint number_of_leaves_acc' (t : binary_tree_nat) (a : nat) : nat :=
+      match t with
+        | Leaf n =>
+          1 + a
+        | Node t1 t2 =>
+          (number_of_leaves_acc' t2 (number_of_leaves_acc' t1 a))
+      end.
+    
+    Definition number_of_leaves_v1' (t : binary_tree_nat) : nat :=
+      number_of_leaves_acc' t 0.
+
+    Fixpoint number_of_leaves_cps' (ans : Type) (t : binary_tree_nat) (k : nat -> ans) : ans :=
+      match t with
+        | Leaf n =>
+          k 1
+        | Node t1 t2 =>
+          number_of_leaves_cps'
+            ans
+            t2
+            (fun n2 => number_of_leaves_cps'
+                         ans
+                         t1
+                         (fun n1 => k (n1 + n2)))
+      end.
+    
+    Definition number_of_leaves_v3' (t : binary_tree_nat) : nat :=
+      number_of_leaves_cps' nat t (fun n => n).
+
+  Do these two definitions satisfy the specification of number_of_leaves?
+
+* Write a function that naively computes the product (i.e., the
+  multiplication) of all the numbers in the leaves of a binary tree.
+  Devise a more efficient version that exploits the fact that 0
+  is absorbant for multiplication.
+  Prove that the naive function and the more efficient version
+  are equivalent in that they compute the same result, for any given
+  tree.  (You might want to write a specification.)
+
+* For any binary tree,
+  how would you compare its number of leaves and its number of nodes?
+  Is there a relation?  If so, could you formalize it in Coq?
+
+-----
+
+From week_40c_flatten.v:
+
+* Prove that composing swap_v0 with itself yields the identity function.
+
+* What is the result of applying flatten_v0 to the result of applying
+  swap_v0 to a tree?  Formalize this in Coq.
+
+-----
+
+% end of week_40_exercises.txt
