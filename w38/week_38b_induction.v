@@ -236,7 +236,7 @@ Proof.
     forall x : nat,
       P x /\ P (S x) /\ P (S (S x))).
     intro x.
-    induction x as [ | | x'' [IHx'' [IHSx'' IHSSx'']] [_ [_ IHSSSx'']]] using nat_ind2.
+    induction x as [ | | x'' _ [IHSx'' [IHSSx'' IHSSSx'']]] using nat_ind2.
         split.
           exact H_P0.
         split.
@@ -282,36 +282,11 @@ Lemma nat_ind2_proved_using_nat_ind3 :
       P n.
 Proof.
   intros P H_P0 H_P1 H_PSS n.
-  assert (consecutive :
-    forall x : nat,
-      P x /\ P (S x)).
-    intro x.
-    induction x as [ | | | x''' [IHx''' IHSx'''] [_ IHSSx'''] [_ IHSSSx''']] using nat_ind3.
-          split.
-            exact H_P0.
-          exact H_P1.
-        split.
-          exact H_P1.
-        apply (H_PSS 0 H_P0 H_P1).
-      split.
-        apply (H_PSS 0 H_P0 H_P1).
-      apply (H_PSS 1 H_P1 (H_PSS 0 H_P0 H_P1)).
-    split.
-      exact IHSSSx'''.
-    apply (H_PSS (S (S x''')) IHSSx''' IHSSSx''').
-  destruct (consecutive n) as [ly _].
-  exact ly.
-
-  Restart.
-
-  (* Hmm i guess i didn't need som of those assertions: *)
-  intros P H_P0 H_P1 H_PSS n.
-  induction n as [ | | | n''' IHn''' IHSn''' IHSSn'''] using nat_ind3.
+  induction n as [ | | | n''' _ IHSn''' IHSSn'''] using nat_ind3.
         exact H_P0.
       exact H_P1.
     apply (H_PSS 0 H_P0 H_P1).
   apply (H_PSS (S n''') IHSn''' IHSSn''').
-
 Qed.
 
 (* ********** *)

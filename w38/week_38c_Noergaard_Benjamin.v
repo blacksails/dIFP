@@ -243,6 +243,7 @@ Proposition there_is_only_one_mystery_function_3 :
     forall n : nat,
       f n = g n.
 Proof.
+  unfold specification_of_the_mystery_function_3.
   intros f g [S_fun3f_bc S_fun3f_ic] [S_fun3g_bc S_fun3g_ic] n.
   induction n as [ | n' IHn'].
     rewrite -> S_fun3g_bc.
@@ -313,11 +314,11 @@ Proposition there_is_only_one_mystery_function_4 :
     forall n : nat,
       f n = g n.
 Proof.
+  unfold specification_of_the_mystery_function_4.
   intros f g [S_fun4f_bc S_fun4f_ic] [S_fun4g_bc S_fun4g_ic] n.
   induction n as [ | n' IHn'].
     rewrite -> S_fun4g_bc.
     exact S_fun4f_bc.
-  Check plus_n_Sm.
   rewrite <- (plus_0_r n').
   rewrite -> (plus_n_Sm n' 0).
   rewrite -> S_fun4f_ic.
@@ -367,6 +368,7 @@ Proposition there_is_only_one_mystery_function_5 :
     forall n : nat,
       f n = g n.
 Proof.
+  unfold specification_of_the_mystery_function_5.
   intros f g [S_fun5f_bc S_fun5f_ic] [S_fun5g_bc S_fun5g_ic] n.
   induction n as [ | n' IHn'].
     rewrite -> S_fun5g_bc.
@@ -442,6 +444,7 @@ Proposition there_is_only_one_mystery_function_7 :
     forall n : nat,
       f n = g n.
 Proof.
+  unfold specification_of_the_mystery_function_7.
   intros f g [S_fun7f_bc S_fun7f_ic] [S_fun7g_bc S_fun7g_ic] n.
   induction n as [ | n' IHn'].
     rewrite -> S_fun7g_bc.
@@ -540,6 +543,7 @@ Proposition there_is_only_one_mystery_function_8 :
     forall n : nat,
       f n = g n.
 Proof.
+  unfold specification_of_the_mystery_function_8.
   intros f g [S_fun8f_bc S_fun8f_ic] [S_fun8g_bc S_fun8g_ic] n.
   induction n as [ | n' IHn'].
     rewrite -> S_fun8g_bc.
