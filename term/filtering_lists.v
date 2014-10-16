@@ -11,7 +11,11 @@
    how to filter elements in or out of lists.
 *)
 
-Require Import List Bool unfold_tactic.
+Require Import List Bool.
+
+Ltac unfold_tactic name :=
+  intros; unfold name;
+  reflexivity.
 
 (* The Bool library defines
      true,
@@ -124,12 +128,22 @@ Fixpoint beq_list (T : Type) (l1 l2 : list T) (comp : T -> T -> bool) :=
       end
   end.
 
-Require Import Arith NPeano.
+Require Import Arith.
 
 Definition beq_nat_list (l1 l2 : list nat) :=
   beq_list nat l1 l2 beq_nat.
 
 Notation "A =l= B" := (beq_nat_list A B) (at level 70, right associativity).
+
+Fixpoint Odd (n : nat) :=
+  match n with
+    | O => false
+    | 1 => true
+    | S (S n) => Odd n
+  end.
+
+Definition Even (n : nat) :=
+  negb (Odd n).
 
 Definition unit_test_for_filter_in (candidate : (nat -> bool) -> list nat -> list nat) :=
   (candidate (fun _ => true) 
@@ -141,10 +155,10 @@ Definition unit_test_for_filter_in (candidate : (nat -> bool) -> list nat -> lis
   (candidate (fun x => (beq_nat x 2)) 
              (1 :: 2 :: 3 :: nil) =l= (2 :: nil))
   &&
-  (candidate (fun x => (even x))
+  (candidate (fun x => (Even x))
              (1 :: 2 :: 3 :: nil) =l= (2 :: nil))
   &&
-  (candidate (fun x => (odd x))
+  (candidate (fun x => (Odd x))
              (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil)).
 
 Theorem there_is_only_one_filter_in :
@@ -156,31 +170,27 @@ Theorem there_is_only_one_filter_in :
 Proof.
   intros f g.
   intros S_f S_g.
+  intros filter nats.
+
   unfold specification_of_filter_in in S_f.
   destruct S_f as [H_f_nil [H_f_true H_f_false]]. 
   unfold specification_of_filter_in in S_g.
   destruct S_g as [H_g_nil [H_g_true H_g_false]].
-  intros filter l.
-  induction l as [ | x xs IHxs ].
-    rewrite -> H_f_nil.
-    rewrite -> H_g_nil.
-    reflexivity.
+
+  induction nats as [ | x xs IHx].
+  rewrite -> (H_f_nil filter).
+  rewrite -> (H_g_nil filter).
+  reflexivity.
+
   destruct (filter x) as [ | ] eqn:H_filter.
-    assert (H_f_filter_true := H_filter).
-    rename H_filter into H_g_filter_true.
-    apply (H_f_true filter x xs) in H_f_filter_true.
-    apply (H_g_true filter x xs) in H_g_filter_true.
-    rewrite -> H_f_filter_true.
-    rewrite -> H_g_filter_true.
-    rewrite -> IHxs.
-    reflexivity.
-  assert (H_f_filter_false := H_filter).
-  rename H_filter into H_g_filter_false.
-  apply (H_f_false filter x xs) in H_f_filter_false.
-  apply (H_g_false filter x xs) in H_g_filter_false.
-  rewrite -> H_f_filter_false.
-  rewrite -> H_g_filter_false.
-  rewrite -> IHxs.
+  rewrite -> (H_f_true filter x xs H_filter).
+  rewrite -> (H_g_true filter x xs H_filter).
+  rewrite -> IHx.
+  reflexivity.
+
+  rewrite -> (H_f_false filter x xs H_filter).
+  rewrite -> (H_g_false filter x xs H_filter).
+  rewrite -> IHx.
   reflexivity.
 Qed.
 
@@ -222,16 +232,20 @@ Proposition filter_in_v0_fits_the_specification_of_filter_in :
 Proof.
   unfold specification_of_filter_in.
   split.
+
     intro p.
     unfold filter_in_v0.
     exact (unfold_filter_in_ds_bc p).
+
   split.
+
     intros p x xs'.
     intros H_filter_true.
     unfold filter_in_v0.
     rewrite -> unfold_filter_in_ds_ic.
     rewrite -> H_filter_true.
     reflexivity.
+
   intros p x xs'.
   intros H_filter_false.
   unfold filter_in_v0.
@@ -248,9 +262,9 @@ Lemma any_filter_in_can_be_rewritten_to_filter_in_v0 :
 Proof.
   intros filter_in S_filter_in.
   intros filter nats.
-  rewrite -> (there_is_only_one_filter_in filter_in 
-                                          filter_in_v0 
-                                          S_filter_in 
+  rewrite -> (there_is_only_one_filter_in filter_in
+                                          filter_in_v0
+                                          S_filter_in
                                           filter_in_v0_fits_the_specification_of_filter_in).
   reflexivity.
 Qed.
@@ -308,41 +322,51 @@ Proof.
   intro filter_in.
   intro S_filter_in.
   intros p1 p2 ns.
+ 
   rewrite ->3 (any_filter_in_can_be_rewritten_to_filter_in_v0 filter_in S_filter_in).
   unfold filter_in_v0.
+  
   induction ns as [ | n ns' IHns' ].
     rewrite -> (unfold_filter_in_ds_bc p1).
     rewrite -> (unfold_filter_in_ds_bc p2).
+
     rewrite -> unfold_filter_in_ds_bc.
     reflexivity.
+
   destruct (p1 n) as [ | ] eqn:H_p1.
   destruct (p2 n) as [ | ] eqn:H_p2.
+
       rewrite -> unfold_filter_in_ds_ic.
       rewrite -> H_p1.
       rewrite -> unfold_filter_in_ds_ic.
       rewrite -> H_p2.
       rewrite -> IHns'.
+
       rewrite -> unfold_filter_in_ds_ic.
       rewrite -> H_p1.
       rewrite -> andb_true_l.
       rewrite -> H_p2.
       reflexivity.
+
     rewrite -> unfold_filter_in_ds_ic.
     rewrite -> H_p1.
     rewrite -> unfold_filter_in_ds_ic.
     rewrite -> H_p2.
     rewrite -> IHns'.
+
     rewrite -> unfold_filter_in_ds_ic.
     rewrite -> H_p1.
     rewrite -> andb_true_l.
     rewrite -> H_p2.
     reflexivity.
+
   rewrite -> unfold_filter_in_ds_ic.
   rewrite -> H_p1.
+  rewrite -> IHns'.
+
   rewrite -> unfold_filter_in_ds_ic.
   rewrite -> H_p1.
   rewrite -> andb_false_l.
-  rewrite -> IHns'.
   reflexivity.
 Qed.
      
@@ -390,10 +414,10 @@ Definition unit_test_for_filter_out (candidate : (nat -> bool) -> list nat -> li
   (candidate (fun x => (beq_nat x 2)) 
              (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil))
   &&
-  (candidate (fun x => (even x))
+  (candidate (fun x => (Even x))
              (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil))
   &&
-  (candidate (fun x => (odd x))
+  (candidate (fun x => (Odd x))
              (1 :: 2 :: 3 :: nil) =l= (2 :: nil)).
 
 Theorem there_is_only_one_filter_out :
@@ -403,31 +427,230 @@ Theorem there_is_only_one_filter_out :
     forall (filter : (nat -> bool)) (nats : list nat),
       f filter nats = g filter nats.
 Proof.
-  intros f g S_f S_g.
+  intros f g.
+  intros S_f S_g.
+  intros filter nats.
+
   unfold specification_of_filter_out in S_f.
-  destruct S_f as [H_f_nil [H_f_true H_f_false]].
+  destruct S_f as [H_f_nil [H_f_true H_f_false]]. 
   unfold specification_of_filter_out in S_g.
   destruct S_g as [H_g_nil [H_g_true H_g_false]].
+
+  induction nats as [ | x xs IHx].
+  rewrite -> (H_f_nil filter).
+  rewrite -> (H_g_nil filter).
+  reflexivity.
+
+  destruct (filter x) as [ | ] eqn:H_filter.
+  rewrite -> (H_f_true filter x xs H_filter).
+  rewrite -> (H_g_true filter x xs H_filter).
+  rewrite -> IHx.
+  reflexivity.
+
+  rewrite -> (H_f_false filter x xs H_filter).
+  rewrite -> (H_g_false filter x xs H_filter).
+  rewrite -> IHx.
+  reflexivity.
+Qed.
+
+Definition filter_out_ds (filter : nat -> bool) (nats : list nat) :=
+  (filter_in_v0 (fun n => negb (filter n)) nats).
+
+Definition filter_out_v0 (filter : nat -> bool) (nats : list nat) :=
+  filter_out_ds filter nats.
+
+Compute unit_test_for_filter_out filter_out_v0.
+
+Proposition filter_out_v0_fits_the_specification_of_filter_out :
+  specification_of_filter_out filter_out_v0.
+Proof.
+  unfold specification_of_filter_out.
+  split.
+
+    intro p.
+    unfold filter_out_v0.
+    unfold filter_out_ds.
+    exact (unfold_filter_in_ds_bc p).
+
+  split.
+
+    intros p x xs'.
+    intros H_filter_true.
+    unfold filter_out_v0.
+    unfold filter_out_ds.
+    
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_filter_true.
+    rewrite -> unfold_negb_base_case_true.
+    unfold filter_in_v0.
+    reflexivity.
+
+  intros p x xs'.
+  intros H_filter_false.
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+ 
+  rewrite -> unfold_filter_in_ds_ic.
+  rewrite -> H_filter_false.
+  rewrite -> unfold_negb_base_case_false.
+  unfold filter_in_v0.
+  reflexivity.
+Qed.
+
+Lemma any_filter_out_can_be_rewritten_to_filter_out_v0 :
+  forall filter_out : (nat -> bool) -> list nat -> list nat,
+    specification_of_filter_out filter_out ->
+    forall (filter : nat -> bool) (nats : list nat),
+      filter_out filter nats = filter_out_v0 filter nats.
+Proof.
+  intros filter_out S_filter_out.
   intros filter nats.
-  induction nats as [ | n nats' IHnats' ].
-    rewrite -> H_f_nil.
-    rewrite -> H_g_nil.
+  rewrite -> (there_is_only_one_filter_out filter_out
+                                           filter_out_v0
+                                           S_filter_out
+                                           filter_out_v0_fits_the_specification_of_filter_out).
+  reflexivity.
+Qed.
+
+Theorem about_filtering_out_all_of_the_elements :
+  forall filter_out : (nat -> bool) -> list nat -> list nat,
+    specification_of_filter_out filter_out ->
+    forall ns : list nat,
+      filter_out (fun _ => true) ns = nil.
+Proof.
+  intro filter_out.
+  intro S_filter_out.
+  intro ns.
+
+  rewrite -> (any_filter_out_can_be_rewritten_to_filter_out_v0 filter_out S_filter_out).
+
+  induction ns as [ | n ns' IHns'].
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+  rewrite unfold_filter_in_ds_bc.
+  reflexivity.
+
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+  rewrite unfold_filter_in_ds_ic.
+  rewrite -> unfold_negb_base_case_true.
+  unfold filter_out_v0 in IHns'.
+  unfold filter_out_ds in IHns'.
+  unfold filter_in_v0 in IHns'.
+  rewrite -> unfold_negb_base_case_true in IHns'.
+  rewrite -> IHns'.
+  reflexivity.
+Qed.
+
+Theorem about_filtering_out_none_of_the_elements :
+  forall filter_out : (nat -> bool) -> list nat -> list nat,
+    specification_of_filter_out filter_out ->
+    forall ns : list nat,
+      filter_out (fun _ => false) ns = ns.
+Proof.
+  intro filter_out.
+  intro S_filter_out.
+  intro ns.
+
+  rewrite -> (any_filter_out_can_be_rewritten_to_filter_out_v0 filter_out S_filter_out).
+
+  induction ns as [ | n ns' IHns'].
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+  rewrite unfold_filter_in_ds_bc.
+  reflexivity.
+
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+  rewrite unfold_filter_in_ds_ic.
+  rewrite -> unfold_negb_base_case_false.
+  unfold filter_out_v0 in IHns'.
+  unfold filter_out_ds in IHns'.
+  unfold filter_in_v0 in IHns'.
+  rewrite -> unfold_negb_base_case_false in IHns'.
+  rewrite -> IHns'.
+  reflexivity.
+Qed.
+
+Theorem about_filtering_out_incrementally :
+  forall filter_out : (nat -> bool) -> list nat -> list nat,
+    specification_of_filter_out filter_out ->
+    forall (p1 p2 : nat -> bool)
+           (ns : list nat),
+      filter_out p2 (filter_out p1 ns) =
+      filter_out (fun x => orb (p1 x) (p2 x)) ns.
+Proof.
+  intro filter_out.
+  intro S_filter_out.
+  intros p1 p2 ns.
+
+  rewrite ->3 (any_filter_out_can_be_rewritten_to_filter_out_v0 filter_out S_filter_out).
+
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+  unfold filter_in_v0.
+
+  induction ns as [ | x xs' IHx' ].
+    rewrite -> (unfold_filter_in_ds_bc (fun n : nat => negb (p1 n))).
+    rewrite -> (unfold_filter_in_ds_bc (fun n : nat => negb (p2 n))).
+    rewrite -> unfold_filter_in_ds_bc.
     reflexivity.
-  destruct (filter n) as [ | ] eqn:H_f_filter_true.
-    assert (H_g_filter_true := H_f_filter_true).
-    apply (H_f_true filter n nats') in H_f_filter_true.
-    apply (H_g_true filter n nats') in H_g_filter_true.
-    rewrite -> H_f_filter_true.
-    rewrite -> H_g_filter_true.
-    rewrite -> IHnats'.
+
+  destruct (p1 x) as [ | ] eqn:H_p1.
+  destruct (p2 x) as [ | ] eqn:H_p2.
+
+      rewrite -> unfold_filter_in_ds_ic.
+      rewrite -> H_p1.
+      rewrite -> unfold_negb_base_case_true.
+      rewrite -> IHx'.
+
+      rewrite -> unfold_filter_in_ds_ic.
+      rewrite -> H_p1.
+      rewrite -> H_p2.
+      rewrite -> orb_true_l.
+      rewrite -> unfold_negb_base_case_true.
+      reflexivity.
+
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_p1.
+    rewrite -> unfold_negb_base_case_true.
+    rewrite -> IHx'.
+
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_p1.
+    rewrite -> orb_true_l.
+    rewrite -> unfold_negb_base_case_true.
     reflexivity.
-  rename H_f_filter_true into H_f_filter_false.
-  assert (H_g_filter_false := H_f_filter_false).
-  apply (H_f_false filter n nats') in H_f_filter_false.
-  apply (H_g_false filter n nats') in H_g_filter_false.
-  rewrite -> H_f_filter_false.
-  rewrite -> H_g_filter_false.
-  rewrite -> IHnats'.
+
+  destruct (p2 x) as [ | ] eqn:H_p2.
+
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_p1.
+    rewrite -> unfold_negb_base_case_false.
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_p2.
+    rewrite -> unfold_negb_base_case_true.
+    rewrite -> IHx'.
+
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_p2.
+    rewrite -> orb_true_r.
+    rewrite -> unfold_negb_base_case_true.
+    reflexivity.
+
+  rewrite -> unfold_filter_in_ds_ic.
+  rewrite -> H_p1.
+  rewrite -> unfold_negb_base_case_false.
+  rewrite -> unfold_filter_in_ds_ic.
+  rewrite -> H_p2.
+  rewrite -> unfold_negb_base_case_false.
+  rewrite -> IHx'.
+
+  rewrite -> unfold_filter_in_ds_ic.
+  rewrite -> H_p1.
+  rewrite -> H_p2.
+  rewrite -> orb_false_l.
+  rewrite -> unfold_negb_base_case_false.
   reflexivity.
 Qed.
 
@@ -436,14 +659,102 @@ Proposition filter_out_from_filter_in :
     specification_of_filter_in filter_in ->
     specification_of_filter_out (fun p ns => filter_in (fun x => negb (p x)) ns).
 Proof.
-Abort.
+  intro filter_in.
+  intro S_filter_in.
+
+  unfold specification_of_filter_out.
+  split.
+  
+  intro p.
+  rewrite -> (any_filter_in_can_be_rewritten_to_filter_in_v0
+                filter_in
+                S_filter_in).
+  unfold filter_in_v0.
+  rewrite -> unfold_filter_in_ds_bc.
+  reflexivity.
+
+  split.
+  
+  intros p x xs'.
+  intro H_px_true.
+
+  rewrite ->2 (any_filter_in_can_be_rewritten_to_filter_in_v0
+                filter_in
+                S_filter_in).
+  unfold filter_in_v0.
+  rewrite -> unfold_filter_in_ds_ic.
+  rewrite -> H_px_true.
+  rewrite -> unfold_negb_base_case_true.
+  reflexivity.
+
+  intros p x xs'.
+  intro H_px_false.
+
+  rewrite ->2 (any_filter_in_can_be_rewritten_to_filter_in_v0
+                filter_in
+                S_filter_in).
+  unfold filter_in_v0.
+
+  rewrite -> unfold_filter_in_ds_ic.  
+  rewrite -> H_px_false.
+  rewrite -> unfold_negb_base_case_false.
+  reflexivity.
+Qed.
 
 Proposition filter_in_from_filter_out :
   forall filter_out : (nat -> bool) -> list nat -> list nat,
     specification_of_filter_out filter_out ->
     specification_of_filter_in (fun p ns => filter_out (fun x => negb (p x)) ns).
 Proof.
-Abort.
+  intro filter_out.
+  intro S_filter_out.
+
+  unfold specification_of_filter_in.
+  split.
+  
+  intro p.
+  rewrite -> (any_filter_out_can_be_rewritten_to_filter_out_v0
+                filter_out
+                S_filter_out).
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+  unfold filter_in_v0.
+  rewrite -> unfold_filter_in_ds_bc.
+  reflexivity.
+
+  split.
+  
+  intros p x xs'.
+  intro H_px_true.
+
+  rewrite ->2 (any_filter_out_can_be_rewritten_to_filter_out_v0
+                filter_out
+                S_filter_out).
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+  unfold filter_in_v0.
+  rewrite -> unfold_filter_in_ds_ic.
+  rewrite -> H_px_true.
+  rewrite -> unfold_negb_base_case_true.
+  rewrite -> unfold_negb_base_case_false.
+  reflexivity.
+
+  intros p x xs'.
+  intro H_px_false.
+
+  rewrite ->2 (any_filter_out_can_be_rewritten_to_filter_out_v0
+                filter_out
+                S_filter_out).
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+  unfold filter_in_v0.
+
+  rewrite -> unfold_filter_in_ds_ic.  
+  rewrite -> H_px_false.
+  rewrite -> unfold_negb_base_case_false.
+  rewrite -> unfold_negb_base_case_true.
+  reflexivity.
+Qed.
 
 (* Which consequences of these propositions can you think of? *)
 
