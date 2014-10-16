@@ -762,8 +762,8 @@ Qed.
 
 (* What is the result
 
-   * of applying filter_in to the concatenation of two lists?
-
+   * of applying filter_in to the concatenation of two lists? 
+   
    * of applying filter_out to the concatenation of two lists?
 
    * of applying filter_in to a reversed list?
@@ -773,4 +773,83 @@ Qed.
 
 (* ********** *)
 
+Lemma unfold_append_bc :
+  forall (nats : list nat),
+    nil ++ nats = nats.
+Proof.
+  apply app_nil_l.
+Qed.
+
+Lemma unfold_append_ic :
+  forall (n : nat) (nats1' nats2 : list nat),
+    (n :: nats1') ++ nats2 = n :: (nats1' ++ nats2).
+Proof.
+  intros n nats1' nats2.
+  symmetry.
+  apply app_comm_cons.
+Qed.
+
+Theorem about_filter_in_and_concatenation_of_lists :
+  forall (filter_in : (nat -> bool) -> list nat -> list nat),
+    specification_of_filter_in filter_in ->
+    forall (filter : nat -> bool) (l1 l2 : list nat),
+      filter_in filter (l1 ++ l2) = filter_in filter l1 ++ filter_in filter l2.
+Proof.
+  intros filter_in S_filter_in.
+  intros filter l1 l2.
+  rewrite ->3 (any_filter_in_can_be_rewritten_to_filter_in_v0 filter_in
+                                                            S_filter_in).
+  unfold filter_in_v0.
+  induction l1 as [ | n nats1' IHnats1'].
+    rewrite -> unfold_append_bc.
+    rewrite -> unfold_filter_in_ds_bc.
+    rewrite -> unfold_append_bc.
+    reflexivity.
+  rewrite -> unfold_append_ic.
+  case (filter n) as [ | ] eqn:H_filter.
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_filter.
+    rewrite -> IHnats1'.
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_filter.
+    rewrite -> unfold_append_ic.
+    reflexivity.
+  rewrite -> unfold_filter_in_ds_ic.
+  rewrite -> H_filter.
+  rewrite -> IHnats1'.
+  rewrite -> unfold_filter_in_ds_ic.
+  rewrite -> H_filter.
+  reflexivity.
+Qed.
+
+Theorem about_filter_out_and_concatenation_of_lists :
+  forall (filter_out : (nat -> bool) -> list nat -> list nat),
+    specification_of_filter_out filter_out ->
+    forall (filter : nat -> bool) (l1 l2 : list nat),
+      filter_out filter l1 ++ l2 = filter_out filter l1 ++ filter_out filter l2.
+Proof.
+  intros filter_out S_filter_out.
+  assert (S_filter_in := filter_in_from_filter_out filter_out S_filter_out).
+  Check about_filter_in_and_concatenation_of_lists (fun (p : nat -> bool) (ns : list nat) =>
+                 filter_out (fun x : nat => negb (p x)) ns) S_filter_in.
+  intros filter l1 l2.
+  rewrite -> (about_filter_in_and_concatenation_of_lists (fun (p : nat -> bool) (ns : list nat) =>
+                 filter_out (fun x : nat => negb (p x)) ns) S_filter_in).
+Abort.
+
+Theorem about_filter_in_and_reverse_list :
+  forall (filter_in : (nat -> bool) -> list nat -> list nat),
+    specification_of_filter_in filter_in ->
+    forall (l : list nat) (filter : nat -> bool),
+      filter_in filter (rev l) = rev (filter_in filter l).
+Proof.
+Abort.
+
+Theorem about_filter_out_and_reverse_list :
+  forall (filter_out : (nat -> bool) -> list nat -> list nat),
+    specification_of_filter_out filter_out ->
+    forall (l : list nat) (filter : nat -> bool),
+      filter_out filter (rev l) = rev (filter_out filter l).
+Proof.
+Abort.
 (* end of filtering_lists.v *)
