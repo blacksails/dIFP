@@ -826,16 +826,36 @@ Theorem about_filter_out_and_concatenation_of_lists :
   forall (filter_out : (nat -> bool) -> list nat -> list nat),
     specification_of_filter_out filter_out ->
     forall (filter : nat -> bool) (l1 l2 : list nat),
-      filter_out filter l1 ++ l2 = filter_out filter l1 ++ filter_out filter l2.
+      filter_out filter (l1 ++ l2) = filter_out filter l1 ++ filter_out filter l2.
 Proof.
   intros filter_out S_filter_out.
-  assert (S_filter_in := filter_in_from_filter_out filter_out S_filter_out).
-  Check about_filter_in_and_concatenation_of_lists (fun (p : nat -> bool) (ns : list nat) =>
-                 filter_out (fun x : nat => negb (p x)) ns) S_filter_in.
   intros filter l1 l2.
-  rewrite -> (about_filter_in_and_concatenation_of_lists (fun (p : nat -> bool) (ns : list nat) =>
-                 filter_out (fun x : nat => negb (p x)) ns) S_filter_in).
-Abort.
+  Check filter_in_from_filter_out filter_out S_filter_out.
+  rewrite ->3 (any_filter_out_can_be_rewritten_to_filter_out_v0 filter_out S_filter_out).
+  unfold filter_out_v0.
+  unfold filter_out_ds.
+  assert (S_filter_in_v0 := filter_in_v0_fits_the_specification_of_filter_in).
+  apply (about_filter_in_and_concatenation_of_lists filter_in_v0 
+                                                    S_filter_in_v0 
+                                                    (fun n : nat => negb (filter n)) l1 l2).
+Qed.
+
+Lemma unfold_reverse_bc :
+  forall (T : Type),
+    rev nil = (nil : list T).
+Proof.
+  unfold_tactic rev.
+Qed.
+
+Lemma unfold_reverse_ic :
+  forall (T : Type) (x : T) (xs : list T),
+    rev (x :: xs) = rev xs ++ x :: nil.
+Proof.
+  unfold_tactic rev.
+Qed.
+
+Compute rev.
+  
 
 Theorem about_filter_in_and_reverse_list :
   forall (filter_in : (nat -> bool) -> list nat -> list nat),
@@ -843,6 +863,28 @@ Theorem about_filter_in_and_reverse_list :
     forall (l : list nat) (filter : nat -> bool),
       filter_in filter (rev l) = rev (filter_in filter l).
 Proof.
+  intros filter_in S_filter_in.
+  intros l filter.
+  rewrite ->2 (any_filter_in_can_be_rewritten_to_filter_in_v0 filter_in S_filter_in).
+  unfold filter_in_v0.
+  induction l as [ | n nats IHnats ].
+    rewrite -> unfold_reverse_bc.
+    rewrite -> unfold_filter_in_ds_bc.
+    rewrite -> unfold_reverse_bc.
+    reflexivity.
+  rewrite -> unfold_reverse_ic.
+  case (filter n) as [ | ] eqn:H_filter.
+  induction (rev nats) as [ | n' nats' IHnats'].
+    rewrite -> unfold_append_bc.
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_filter.
+    rewrite -> unfold_filter_in_ds_ic.
+    rewrite -> H_filter.
+    rewrite -> unfold_reverse_ic.
+    rewrite -> IHnats.
+  rewrite ->
+
+    
 Abort.
 
 Theorem about_filter_out_and_reverse_list :
