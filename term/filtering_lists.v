@@ -135,6 +135,8 @@ Definition beq_nat_list (l1 l2 : list nat) :=
 
 Notation "A =l= B" := (beq_nat_list A B) (at level 70, right associativity).
 
+(* We will use the following two functions as examples of predicates which we
+* can use to filter elements in or out of lists *)
 Fixpoint odd (n : nat) :=
   match n with
     | O => false
@@ -152,14 +154,12 @@ Definition unit_test_for_filter_in (candidate : (nat -> bool) -> list nat -> lis
   (candidate (fun _ => false) 
              (1 :: 2 :: 3 :: nil) =l= nil)
   &&
-  (candidate (fun x => (beq_nat x 2)) 
+  (candidate (beq_nat 2) 
              (1 :: 2 :: 3 :: nil) =l= (2 :: nil))
   &&
-  (candidate (fun x => (even x))
-             (1 :: 2 :: 3 :: nil) =l= (2 :: nil))
+  (candidate even (1 :: 2 :: 3 :: nil) =l= (2 :: nil))
   &&
-  (candidate (fun x => (odd x))
-             (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil)).
+  (candidate odd (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil)).
 
 Theorem there_is_only_one_filter_in :
   forall (f g : (nat -> bool) -> list nat -> list nat),
@@ -401,14 +401,12 @@ Definition unit_test_for_filter_out (candidate : (nat -> bool) -> list nat -> li
   (candidate (fun _ => false) 
              (1 :: 2 :: 3 :: nil) =l= (1 :: 2 :: 3 :: nil))
   &&
-  (candidate (fun x => (beq_nat x 2)) 
+  (candidate (beq_nat 2) 
              (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil))
   &&
-  (candidate (fun x => (even x))
-             (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil))
+  (candidate even (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil))
   &&
-  (candidate (fun x => (odd x))
-             (1 :: 2 :: 3 :: nil) =l= (2 :: nil)).
+  (candidate odd (1 :: 2 :: 3 :: nil) =l= (2 :: nil)).
 
 Theorem there_is_only_one_filter_out :
   forall (f g : (nat -> bool) -> list nat -> list nat),
@@ -685,6 +683,7 @@ Qed.
 
 (* Which consequences of these propositions can you think of? *)
 
+(* We can define filter_out using filter_in *)
 Definition filter_out_v1 (p : nat -> bool) (xs : list nat) :=
   filter_in_v0 (fun n => negb (p n)) xs.
 
@@ -718,6 +717,22 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma any_filter_in_can_be_rewritten_to_filter_in_v1 :
+  forall filter_in : (nat -> bool) -> list nat -> list nat,
+    specification_of_filter_in filter_in ->
+    forall (p : nat -> bool) (xs : list nat),
+      filter_in p xs = filter_in_v1 p xs.
+Proof.
+  intros filter_in S_filter_in.
+  intros p xs.
+  rewrite -> (there_is_only_one_filter_in filter_in
+                                          filter_in_v1
+                                          S_filter_in
+                                          filter_in_v1_fits_the_specification_of_filter_in).
+  reflexivity.
+Qed.
+
+(* We can define filter_in using filter_out *)
 Definition filter_in_v1 (p : nat -> bool) (xs : list nat) :=
   filter_out_v0 (fun n => negb (p n)) xs.
 
@@ -751,25 +766,6 @@ Proof.
   reflexivity.
 Qed.
 
-(* Using the two propositions above we could have proven filter_out theorems
-* using the filter_in_ds unfold lemmas and vice versa. Let's try to do that in
-* the following proofs. *)
-
-Lemma any_filter_in_can_be_rewritten_to_filter_in_v1 :
-  forall filter_in : (nat -> bool) -> list nat -> list nat,
-    specification_of_filter_in filter_in ->
-    forall (p : nat -> bool) (xs : list nat),
-      filter_in p xs = filter_in_v1 p xs.
-Proof.
-  intros filter_in S_filter_in.
-  intros p xs.
-  rewrite -> (there_is_only_one_filter_in filter_in
-                                          filter_in_v1
-                                          S_filter_in
-                                          filter_in_v1_fits_the_specification_of_filter_in).
-  reflexivity.
-Qed.
-
 Lemma any_filter_out_can_be_rewritten_to_filter_out_v1 :
   forall filter_out : (nat -> bool) -> list nat -> list nat,
     specification_of_filter_out filter_out ->
@@ -785,6 +781,10 @@ Proof.
   reflexivity.
 Qed.
 
+(* Using the two propositions above we could have proven filter_out theorems
+* using the filter_in_ds unfold lemmas and vice versa. Let's try to do that in
+* the following proofs. *)
+
 (* ********** *)
 
 (* What is the result
@@ -799,6 +799,10 @@ Qed.
 *)
 
 (* ********** *)
+
+(* We will answer the above questions with four theorems and their proofs *)
+
+(* We will need the following two lemmas for the following theorems *)
 
 Lemma unfold_append_bc :
   forall (xs : list nat),
@@ -898,6 +902,7 @@ Proof.
                                                     xs1 xs2).
 Qed.
 
+(* We will need the following two lemmas for proving the following two theorems *)
 Lemma unfold_reverse_bc :
   forall (T : Type),
     rev nil = (nil : list T).
@@ -971,7 +976,7 @@ Proof.
   intros filter_out S_filter_out.
   intros p xs.
   rewrite ->2 (any_filter_out_can_be_rewritten_to_filter_out_v1 filter_out
-                                                               S_filter_out).
+                                                                S_filter_out).
   unfold filter_out_v1.
   assert (S_filter_in_v0 := filter_in_v0_fits_the_specification_of_filter_in).
   apply (about_filter_in_and_reverse_list filter_in_v0
