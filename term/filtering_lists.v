@@ -135,15 +135,15 @@ Definition beq_nat_list (l1 l2 : list nat) :=
 
 Notation "A =l= B" := (beq_nat_list A B) (at level 70, right associativity).
 
-Fixpoint Odd (n : nat) :=
+Fixpoint odd (n : nat) :=
   match n with
     | O => false
     | 1 => true
-    | S (S n) => Odd n
+    | S (S n) => odd n
   end.
 
-Definition Even (n : nat) :=
-  negb (Odd n).
+Definition even (n : nat) :=
+  negb (odd n).
 
 Definition unit_test_for_filter_in (candidate : (nat -> bool) -> list nat -> list nat) :=
   (candidate (fun _ => true) 
@@ -155,10 +155,10 @@ Definition unit_test_for_filter_in (candidate : (nat -> bool) -> list nat -> lis
   (candidate (fun x => (beq_nat x 2)) 
              (1 :: 2 :: 3 :: nil) =l= (2 :: nil))
   &&
-  (candidate (fun x => (Even x))
+  (candidate (fun x => (even x))
              (1 :: 2 :: 3 :: nil) =l= (2 :: nil))
   &&
-  (candidate (fun x => (Odd x))
+  (candidate (fun x => (odd x))
              (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil)).
 
 Theorem there_is_only_one_filter_in :
@@ -404,10 +404,10 @@ Definition unit_test_for_filter_out (candidate : (nat -> bool) -> list nat -> li
   (candidate (fun x => (beq_nat x 2)) 
              (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil))
   &&
-  (candidate (fun x => (Even x))
+  (candidate (fun x => (even x))
              (1 :: 2 :: 3 :: nil) =l= (1 :: 3 :: nil))
   &&
-  (candidate (fun x => (Odd x))
+  (candidate (fun x => (odd x))
              (1 :: 2 :: 3 :: nil) =l= (2 :: nil)).
 
 Theorem there_is_only_one_filter_out :
