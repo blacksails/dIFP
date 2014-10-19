@@ -1,0 +1,138 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper]{geometry}
+\usepackage{parskip}
+
+\title{
+Introduction to Functional Programming 2014\\
+Term Project - List Filtering
+}
+\author{
+  Benjamin Nørgaard \#201209884\\
+}
+
+\begin{document}
+\maketitle
+\clearpage
+\tableofcontents
+\clearpage
+\section{Introduction}
+The purpose of this report is explain what list filtering is, we will be doing this using the Coq Proof Assistant. We will define two functions \texttt{filter\_in} and \texttt{filter\_out}, and prove some properties about these. This should in turn give us a better understanding of what list filtering is and how it works. In the end we will find a connection between these two functions, which in turn allows us to make proofs for one of them, and then reuse the same proofs for the other function.
+
+The report is meant to be read alongside the source code file (\texttt{Noergaard\_Benjamin.v}). In this way I will be able to explain the steps we take without copying too much source code into this document. I will be using \texttt{mono space font} when I refer two how things are named in the source code. Finally i use indentation to visualise the number of remaining subgoals.
+
+\section{Filter In}
+The \texttt{filter\_in} function takes a predicate and a list of natural numbers and returns a new list. The predicate is a function which takes a natural number and returns true or false. An example of a predicate could be a function which returns true if the number is even and false otherwise.
+
+When we give the \texttt{filter\_in} function a predicate and a list we, get a new list where the only elements in it are those that satisfy the predicate.
+
+\subsection{Unit Test for Filter In}
+We will start by creating a unit test which takes a candidate \texttt{filter\_in} function and runs a few tests on it that we see fit. We have to do assertions on how lists look after we have filtered them with a predicate, for that we first need a few helper functions. We will not prove anything about them because we solely use them in our tests.
+
+Earlier in the course for which this report was written, I came up with a generic way of comparing lists in Coq and defined this as a function \texttt{beq\_list}. This function takes a type, two lists of that type and a function, which compares two elements in the lists for equality and returns a boolean. Using this function we can very easily define a function which compares our lists of natural numbers. We defined this as \texttt{beq\_nat\_list}. Now we have a function which can compare two lists for equality. In addition we define a special notation for this function which looks like this: \texttt{list1 =l= list2}. Last thing before the actual unit tests are two examples of predicates which we will use in the unit tests.
+
+The actual unit tests all work on the list \texttt{1 :: 2 :: 3 :: nil}, we simply give the candidate \texttt{filter\_in} function different predicates, and then we assert what the resulting lists will look like.
+
+\subsection{Filter In is Well-Defined}
+We were given the \texttt{specification\_of\_filter\_in} and we will now look at a proof which shows that it is well-defined. We do this by structural induction on the list which is given to \texttt{filter\_in}. 
+
+The proof is pretty straight forward, but in the induction case we have to show that it holds no matter if the predicate evaluates to true or false, we must therefore do a case proof on the predicate of the head of the list. In the beginning of each case i rename the assuption \texttt{H\_p}, which reflects the destruction of the predicate, to \texttt{H\_p\_true} and \texttt{H\_p\_false}. This is not really nessesary, but it works as a headline for the case and it also makes it easier to read the proof when we use the assumption. I will be doing this in all case proofs for the rest of the sourcefile.
+
+\subsection{Implementation of Filter In}
+The implementation of \texttt{filter\_in} consists of two functions, a recursive auxillery function and a simple wrapper function that calls the auxillery function. The auxillery function consistet of first two cases which is the list base case and the list inductive case, either a list is \texttt{nil} or else it is \texttt{x :: xs'}, which is an element concatenated with a list. In the base case we return \texttt{nil} and in the inductive case we match on the predicate of \texttt{x} if true we concatenate \texttt{x} with a recursive call to the auxillery function, if false we throw away \texttt{x} and simply continue calling recursively on the tail of the list.
+
+We compute the unit tests and see that they pass, so our implementation seems to be right let's prove that now.
+
+\subsection{Implemtation Fits the Specification}
+In order to prove if our implementation fits the specification, we will need unfold lemmas for it, one for the base case and one for the inductive case. Using these we simply show for each of the branches in the specification that our implemented \texttt{filter\_in} fits them.
+
+We also define a small helper lemma which says that any \texttt{filter\_in} function that satisfies the specification can be rewritten to our implementation of \texttt{filter\_in}. This will be conveinient because we will be able to use the unfold lemma for our implementation in proofs about any abitratry \texttt{filter\_in} function. With rewriting to our implementation, we will also be able to reuse our proofs for other implementations. This lemma simply combines the well-defined-theorem with the theorem that says that our implementation fits the specification.
+
+We will use this lemma in the following theorems, as they will be stating properties that any \texttt{filter\_in} function should have.
+
+\subsection{About lemmas}
+We will now prove some about lemmas, where each of them will state some property of our function. 
+
+\subsubsection{Filtering in all/none of the elements}
+The first two are quite alike, and the point of both of them lies in the predicate. When the predicate is a function that always evaluates to true, we are to return the filtered list unmodified. Like wise when the predicate always evaluates to false, we have to return an empty list as everything gets filtered out.
+
+We do both of these proves by first rewriting to our implementation, and then we do structural induction on the list. Because we have rewritten to our implementation we can now use our unfold lemmas to prove both of these properties.
+
+\subsubsection{Filtering In Incrementally}
+The last about lemma that we will look at says that given any \texttt{filter\_in} function that satisfies the specification, when that \texttt{filter\_in} function is used twice with two abritrary predicates on some list, it yields the same result as using it once with a predicate which is combined with an and of the two predicates.
+
+The proof is a bit long but really not that complicated. Again we can use the fact that we can rewrite to our implemtation of \texttt{filter\_in}. We then do structural inducation on the list. The base case is very simple. In the inductive case we have to prove that the property holds for any combination of the predicates. Therefore we do a nested case proof on each of the predicates called on the head of the list. One should also notice that we used some of the library lemmas for working with the boolean binary operators.
+
+\section{Filter Out}
+The function \texttt{filter\_out} does list filtering like \texttt{filter\_in}, it takes the same arguments that is a predicate and a list of natural numbers. The difference lies in how we interpret the predicate of some element, where \texttt{filter\_in} includes an element in the resulting list if the predicate of the element is true, \texttt{filter\_out} excludes an element from the resulting list if the predicate of the element is true.
+
+As I started making a naive implementation of \texttt{filter\_out}, i soon realised that i could reuse most of the proofs that i had written for \texttt{filter\_in} with only slight modifications to match the \texttt{filter\_out} behaviour. This meant that most of the proofs were mere copy paste. In the following sections i will skip the parts that are almost identical to \texttt{filter\_in}, and instead focus on the differences.
+
+\subsection{Differences Between Filter In and Filter Out}
+The first difference lies in the unit test, here we have to modify the resulting lists to match the behaviour of \texttt{filter\_out}.
+
+As mentioned in the explaination of \texttt{filter\_out}, the difference in the implementation lies in the inductive case where we react differently on the results of the predicate. We simply swap the right-hand-side of the match clauses so that we throw away elements in the true case and we keep them in the false case.
+
+The last difference that i would like to highligt is in the last about lemma. Here we should notice that \texttt{filter\_out} used twice with two arbitrary on some list, yields the same result as using \texttt{filter\_out} used once with a predicate created by an or of the two predicates, on some list. This is because we filter out an element if just one of the two predicates evaluates to true.
+
+This also makes the proof differ somewhat from that of \texttt{filter\_in}, we have a few more cases and we now use the \texttt{orb} lemmas of the Bool library.
+
+\subsection{Thoughts on Similarities}
+As a programmer similarities in code often means that something can be generalised. One example that i used early in the code was the generic list comparison function. When we look at mathematics the same thing applies, here similirities often hints that there must be some connection. In the following chapter we will see that there is indeed a connection between these two functions.
+
+\section{Filter Out from Filter In and Vice Versa}
+The following two propositions (\texttt{filter\_out\_from\_filter\_in} and \texttt{filter\_in\_from\_filter\_out}, will show us that there is a connection between \texttt{filter\_in} and \texttt{filter\_out}. The first one says that given a \texttt{filter\_in} that satisfies the specification of \texttt{filter\_in}, we have a function that satisfies the specification of \texttt{filter\_out}, and vice versa.
+
+Because the function that satisfies the opposing specification uses the function \texttt{negb} from the Bool library, we need unfold lemmas for negb to prove that the function satisfies the opposing specification.
+
+Using split, rewriting to our implementations of each of the functions and the unfold lemmas for negb these two proofs are straight forward.
+
+\subsection{Consequences of the Propositions}
+The fact that we can define functions that satisfies the opposing specification, given one of the functions that satisfies its specification, means that we should be able make a new implementation of each of the functions that uses the opposing function which we have already defined and shown that it satisfies its specification.
+
+\subsubsection{New Filter Out Function}
+We can now define a new function that calls our first implementation of \texttt{filter\_in} but a predicate created by negating the result of the predicate.
+
+If we compute the unit test we will see that it indeed seems that this new implementation is reasonable. We prove it by unfolding our new function so that we see what it is made up from, and using the unfold lemmas for \texttt{negb} we can prove that the function actually satisfies the specification of \texttt{filter\_out}.
+
+For convenience we will also here make a lemma that lets us rewrite any implementation of \texttt{filter\_out} to this new implementation. This will mean that we will be able to go from proofs about \texttt{filter\_out}, and show them using \texttt{filter\_in}.
+
+\subsubsection{New Filter In Function}
+Like wise we will be able to do the same thing the other way around. Which means that we can proove properties about \texttt{filter\_in} using proofs for \texttt{filter\_out}.
+
+\subsection{Final Properties Shown Using Connections}
+We will now for \texttt{filter\_in} and \texttt{filter\_out} look at two more properties, and we will be using the connections to prove the opposing proofs.
+
+\subsubsection{Filtering and Concatenation of Lists}
+When we use \texttt{filter\_in} or \texttt{filter\_out} on a predicate and two lists appended together, the result should be the same as first using \texttt{filter\_in} or \texttt{filter\_out} on the predicate and the first list, and then appending the result with using the same type of filtering on the predicate and the second list.
+
+In order to show this we need unfold lemmas for append. We haven't yet shown this property for either of \texttt{filter\_in} or \texttt{filter\_out} so we will go ahead and show it for \texttt{filter\_in} first. With that done we could do an almost identical proof for \texttt{filter\_out}, or we could go ahead and rewrite to our second implementaion of \texttt{filter\_out}. Because its connection to \texttt{filter\_in} we can then go a head and simply reuse the proof we did for \texttt{filter\_in}.
+
+\subsubsection{Filtering and Reverse Lists}
+We will go ahead and take the same approach as with the previous property, but first we need unfold lemmas for the reverse list function. With them we go ahead and make the proof for \texttt{filter\_in}. Here it really shines to be able to reuse the proof because of the length and complexity of the proof. We then simply go ahead and reuse the proof for \texttt{filter\_in} to proove the same property for \texttt{filter\_out}.
+
+\section{Conclusion}
+We have looked at how to do induction proofs on lists and case proofs on predicates, we used this to explain what list filtering is and to get a better understanding of how to work on lists. We defined two functions one that filtered elements into a list and one that opposingly filtered elements out of a list. When doing our proofs about the second we noticed some great similarities, which in turn led us to find a connection between two. This enabled us to prove a property of one of the functions and then reuse the exact same proof when proving the same property for the other function.
+
+If we were to look more into list filtering we could try doing it in a more generic fashion, where instead of limiting ourselves to work on lists of natural numbers, we could work on lists of an arbitrary type.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}
