@@ -717,18 +717,18 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma any_filter_in_can_be_rewritten_to_filter_in_v1 :
-  forall filter_in : (nat -> bool) -> list nat -> list nat,
-    specification_of_filter_in filter_in ->
+Lemma any_filter_out_can_be_rewritten_to_filter_out_v1 :
+  forall filter_out : (nat -> bool) -> list nat -> list nat,
+    specification_of_filter_out filter_out ->
     forall (p : nat -> bool) (xs : list nat),
-      filter_in p xs = filter_in_v1 p xs.
+      filter_out p xs = filter_out_v1 p xs.
 Proof.
-  intros filter_in S_filter_in.
+  intros filter_out S_filter_out.
   intros p xs.
-  rewrite -> (there_is_only_one_filter_in filter_in
-                                          filter_in_v1
-                                          S_filter_in
-                                          filter_in_v1_fits_the_specification_of_filter_in).
+  rewrite -> (there_is_only_one_filter_out filter_out
+                                           filter_out_v1
+                                           S_filter_out
+                                           filter_out_v1_fits_the_specification_of_filter_out).
   reflexivity.
 Qed.
 
@@ -766,18 +766,18 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma any_filter_out_can_be_rewritten_to_filter_out_v1 :
-  forall filter_out : (nat -> bool) -> list nat -> list nat,
-    specification_of_filter_out filter_out ->
+Lemma any_filter_in_can_be_rewritten_to_filter_in_v1 :
+  forall filter_in : (nat -> bool) -> list nat -> list nat,
+    specification_of_filter_in filter_in ->
     forall (p : nat -> bool) (xs : list nat),
-      filter_out p xs = filter_out_v1 p xs.
+      filter_in p xs = filter_in_v1 p xs.
 Proof.
-  intros filter_out S_filter_out.
+  intros filter_in S_filter_in.
   intros p xs.
-  rewrite -> (there_is_only_one_filter_out filter_out
-                                           filter_out_v1
-                                           S_filter_out
-                                           filter_out_v1_fits_the_specification_of_filter_out).
+  rewrite -> (there_is_only_one_filter_in filter_in
+                                          filter_in_v1
+                                          S_filter_in
+                                          filter_in_v1_fits_the_specification_of_filter_in).
   reflexivity.
 Qed.
 
@@ -984,5 +984,20 @@ Proof.
                                           (fun n : nat => negb (p n))
                                           xs).
 Qed.
+
+Theorem ben :
+  forall b : bool,
+    orb b (negb b) = true.
+Proof.
+  intros [ | ].
+  apply orb_true_l.
+  rewrite -> orb_false_l.
+  apply unfold_negb_base_case_false.
+Qed.
+
+
+
+
+
 
 (* end of filtering_lists.v *)
